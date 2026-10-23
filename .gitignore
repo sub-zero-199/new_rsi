@@ -9,3 +9,4 @@ new-rsi/
 __pycache__/
 *.pyc
 .venv/
+models/
