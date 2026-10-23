@@ -4,7 +4,6 @@
 *.db-wal
 logs/
 debug/
-models/
 new-rsi/
 .removed_hardware/
 __pycache__/
