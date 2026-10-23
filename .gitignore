@@ -1,12 +1,37 @@
+# Environment and secrets
 .env
+
+# Databases
 *.db
 *.db-shm
 *.db-wal
+
+# Logs and debug output
 logs/
 debug/
+
+# Models: keep the folder and text files, ignore everything else
+models/*
+!models/.gitkeep
+!models/*.txt
+
+# Old / local-only folders
 new-rsi/
 .removed_hardware/
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
 .venv/
-models/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Editor and OS files
+.vscode/
+.idea/
+*.swp
+.DS_Store

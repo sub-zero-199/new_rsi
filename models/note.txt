@@ -1,0 +1,4 @@
+in git you'll not find models (yolov11m) so later add then with names
+-detect.pt
+-keypoint.pt
+-ocr.pt
