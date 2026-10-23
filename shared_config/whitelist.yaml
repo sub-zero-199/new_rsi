@@ -1,0 +1,22 @@
+# ANPR Vehicle Whitelist Configuration
+# Whitelisted vehicles will have disableVahanVerification=true automatically applied
+# This skips the VAHAN verification retry on "Vehicle not found" errors
+
+whitelist:
+  enabled: true
+
+  # Exact vehicle numbers to whitelist (case-insensitive, spaces/dashes removed)
+  # Add vehicle numbers that should bypass VAHAN verification
+  vehicles:
+    # - HR892898
+    # Add more whitelisted vehicles below:
+    # - DL01CAB1234
+    # - 22BH6517A
+
+  # Regex patterns for whitelisting groups of vehicles
+  # Use Python regex syntax (case-insensitive matching)
+  patterns:
+    # Example: Whitelist all HR89xxxx plates
+    # - "^HR89\\d{4}$"
+    # Example: Whitelist all BH series plates
+    # - "^\\d{2}BH\\d{4}[A-Z]{1,2}$"

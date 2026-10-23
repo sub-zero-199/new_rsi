@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+LOGS=/home/lynkit/new_rsi/logs
+case "$1" in
+    gi)  exec tail -F "$LOGS/gi.log" ;;
+    wb)  exec tail -F "$LOGS/wb.log" ;;
+    go)  exec tail -F "$LOGS/go.log" ;;
+    cs)  exec tail -F "$LOGS/cs.log" ;;
+    all) exec tail -F "$LOGS/gi.log" "$LOGS/wb.log" "$LOGS/go.log" "$LOGS/cs.log" ;;
+    sys) exec journalctl -u cwc-anpr -f ;;
+    *)   echo "Usage: anpr-log gi|wb|go|cs|all|sys"; exit 1 ;;
+esac

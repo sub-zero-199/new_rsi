@@ -1,0 +1,19 @@
+{
+  "serverHost": "13.126.219.12",
+  "serverPort": 8004,
+  "sendIntervalMs": 30000,
+  "pingTimeoutMs": 800,
+  "rtspTimeoutSec": 8,
+  "maxRetries": 3,
+  "checkIntervalSec": 900,
+  "verboseLogging": true,
+  "rtspUsername": "admin",
+  "cameraIPs": [
+    "192.168.2.104",
+    "192.168.2.107",
+    "192.168.2.111",
+    "192.168.2.112",
+    "192.168.2.105",
+    "192.168.2.110"
+  ]
+}

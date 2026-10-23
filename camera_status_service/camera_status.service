@@ -1,0 +1,23 @@
+[Unit]
+Description=CWC Camera Status Monitor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lynkit
+Group=lynkit
+WorkingDirectory=/home/lynkit/new_rsi/camera_status_service
+# Optional .env for RTSP_USERNAME / RTSP_PASSWORD (the '-' makes it optional). RTSP creds
+# may instead be set in config.json (rtspUsername / rtspPassword).
+EnvironmentFile=-/home/lynkit/new_rsi/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/lynkit/new_rsi/.venv/bin/python -u client.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=camera-status
+
+[Install]
+WantedBy=multi-user.target

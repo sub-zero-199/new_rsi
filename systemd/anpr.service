@@ -1,0 +1,30 @@
+[Unit]
+Description=CWC ANPR v2 (unified gate-in / weighbridge / gate-out)
+After=network-online.target redis-server.service
+Wants=network-online.target redis-server.service
+
+[Service]
+Type=simple
+User=lynkit
+Group=lynkit
+# Paths below are a template: ./setup.sh replaces /home/lynkit/CWC-script/new_rsi with the
+# folder setup.sh is run from when it installs this unit — no need to edit by hand.
+WorkingDirectory=/home/lynkit/CWC-script/new_rsi
+# Credentials live in config.yaml on this workstation. An .env is an OPTIONAL override —
+# the leading '-' makes systemd ignore it when absent (don't remove the '-').
+EnvironmentFile=-/home/lynkit/CWC-script/new_rsi/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/lynkit/CWC-script/new_rsi/.venv/bin/python -m anpr.main -c /home/lynkit/CWC-script/new_rsi/config.yaml
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cwc-anpr
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ReadWritePaths=/home/lynkit/CWC-script/new_rsi
+
+[Install]
+WantedBy=multi-user.target

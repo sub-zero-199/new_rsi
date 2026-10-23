@@ -1,0 +1,75 @@
+[project]
+name = "cwc-anpr"
+version = "0.1.0"
+description = "CWC ANPR v2 — unified single-process license-plate recognition (3-model YOLO cascade) for gate-in / weighbridge / gate-out."
+readme = "README.md"
+requires-python = ">=3.11"
+
+# Core deps are light enough to install + run/test without a GPU.
+# Heavy ML deps (torch/ultralytics/tensorrt) live in the optional [ml] extra so the
+# system runs against the MockEngine on a dev box and only pulls torch on the GPU server.
+dependencies = [
+    "numpy>=1.26",
+    "opencv-python>=4.9",
+    "pyyaml>=6.0",
+    "pydantic>=2.6",
+    "python-dotenv>=1.0",
+    "redis>=5.0",
+    "requests>=2.31",
+    "boto3>=1.34",
+    "rapidfuzz>=3.6",
+    "psutil>=5.9",   # camera_status_service system metrics (CPU/RAM/disk/net/temp)
+]
+
+[project.optional-dependencies]
+ml = [
+    "ultralytics>=8.3.133",
+    # CUDA 12.1 build of torch — matches the on-site NVIDIA driver 535 (CUDA 12.2).
+    # The default PyPI torch is a CUDA 13 build and will NOT run on driver 535 (falls back
+    # to CPU). cu121 wheels exist up to torch 2.5.x, hence the upper bound.
+    "torch>=2.2,<2.6",
+    "torchvision",
+    # TensorRT: needed both to BUILD the .engine files and to RUN them at inference time.
+    # CUDA-12 build EXPLICITLY (plain `tensorrt` now resolves to CUDA-13, which fails on
+    # driver 535 with CUDA error 35). Pin to 10.x: the newest 11.x drops BuilderFlag.FP16,
+    # which ultralytics 8.4.60's exporter needs (AttributeError during the FP16 build).
+    "tensorrt-cu12>=10,<11",
+    "onnx",
+    "onnxslim",
+]
+dev = [
+    "pytest>=8.0",
+    "moto>=5.0",
+    "fakeredis>=2.21",
+    "requests-mock>=1.12",
+]
+
+[project.scripts]
+cwc-anpr = "anpr.main:main"
+
+[tool.uv]
+package = true
+
+# Pull torch/torchvision from PyTorch's CUDA 12.1 index so the installed build matches the
+# on-site NVIDIA driver 535 (CUDA 12.2). Everything else still comes from PyPI.
+[tool.uv.sources]
+torch = { index = "pytorch-cu121" }
+torchvision = { index = "pytorch-cu121" }
+
+[[tool.uv.index]]
+name = "pytorch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["anpr"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# importlib mode: load test modules by path, not via the importable `tests` package name
+# (ultralytics ships its own top-level `tests` package that would otherwise shadow ours).
+addopts = "-q --import-mode=importlib"

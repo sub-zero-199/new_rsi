@@ -1,0 +1,183 @@
+# CWC ANPR v2 — unified config. Copy to config.yaml and edit.
+# On-site workstation: credentials (RTSP password/username, AWS keys) are kept
+# in THIS file (see the sections below). If a matching env var is set, it overrides the file.
+# Keep this file readable only by the service user (chmod 600); don't commit real creds.
+
+# Three fixed camera PAIRS — two slots per point (gate_in, weighbridge, gate_out).
+# Don't add/remove entries; just set `address` and `enabled`. Then run:
+#     uv run python tools/fetch_camera_macs.py
+# which auto-sets `enabled` per slot (true if the camera answers on its RTSP port, else
+# false) and auto-fills `mac` (the portal cameraId) when it can read it from the camera.
+# `mac` starts as a placeholder and MUST become the camera's real MAC for the portal to match.
+# point: gate_in | weighbridge | gate_out   (also the storage bucket)
+cameras:
+  # ---- gate_in ----
+  - id: gatein_cam1
+    point: gate_in
+    mac: "000000000001"      # placeholder — auto-filled by tools/fetch_camera_macs.py
+    enabled: true
+    address: 192.168.1.101
+    port: 554
+    channel: 1
+    subtype: 0
+    description: Gate-in camera 1
+  - id: gatein_cam2
+    point: gate_in
+    mac: "000000000002"
+    enabled: true
+    address: 192.168.1.102
+    port: 554
+    channel: 1
+    subtype: 0
+    description: Gate-in camera 2
+  # ---- weighbridge ----
+  - id: weighbridge_cam1
+    point: weighbridge
+    mac: "000000000003"
+    enabled: true
+    address: 192.168.1.103
+    port: 554
+    channel: 1
+    subtype: 0
+    description: Weighbridge camera 1
+  - id: weighbridge_cam2
+    point: weighbridge
+    mac: "000000000004"
+    enabled: true
+    address: 192.168.1.104
+    port: 554
+    channel: 1
+    subtype: 0
+    description: Weighbridge camera 2
+  # ---- gate_out ----
+  - id: gateout_cam1
+    point: gate_out
+    mac: "000000000005"
+    enabled: true
+    address: 192.168.1.105
+    port: 554
+    channel: 1
+    subtype: 0
+    description: Gate-out camera 1
+  - id: gateout_cam2
+    point: gate_out
+    mac: "000000000006"
+    enabled: true
+    address: 192.168.1.106
+    port: 554
+    channel: 1
+    subtype: 0
+    description: Gate-out camera 2
+
+detection:
+  window_seconds: 10.0
+  min_detections: 3
+  min_confidence: 0.7
+  detector_confidence: 0.75
+  max_detections_per_window: 50
+  top_n_candidates: 4
+  # Smallest plate worth reading, as a fraction of FRAME WIDTH (~109px on a 2592px frame).
+  # Measured on 62 real frames: 0 of 13 reads below this ever produced a valid plate, 85%
+  # did above it. Distant plates were reaching OCR and feeding garbage into the windows —
+  # the pipeline's own guard only rejects ~17px-wide boxes. Raise after zooming the camera.
+  min_plate_width_frac: 0.042
+  # Keep detecting at a point while one of its cameras is down?
+  #   true  - the point runs on whatever cameras are live. A damaged gate-in camera costs
+  #           you one angle, not the lane.
+  #   false - the point STOPS detecting until every enabled camera is back, then resumes on
+  #           its own. Use where a single angle is not trusted to read the lane.
+  # Only ENABLED cameras are judged: set a damaged camera to `enabled: false` and the point
+  # keeps working on the remaining one instead of halting forever.
+  allow_degraded_cameras: true
+  # How long a camera must stay down before it halts the point (only when the above is
+  # false). RTSP streams reconnect routinely; this stops the point flapping on a brief blip.
+  camera_down_grace_seconds: 30.0
+
+# Per-point overrides (weighbridge + gate-out use a shorter window, like v11_1).
+detection_per_point:
+  weighbridge:
+    window_seconds: 5.0
+  gate_out:
+    window_seconds: 5.0
+    # Any detection setting can be overridden per point, e.g. require BOTH gate-out
+    # cameras to be up before a read is trusted:
+    # allow_degraded_cameras: false
+
+matching:
+  fuzzy_threshold: 0.80
+  dedup_threshold: 0.80
+  active_list_ttl_seconds: 60
+
+cooldown:
+  same_place_seconds: 60
+  reentry_gap_seconds: 300
+  weighbridge_second_gap_seconds: 600
+  weighbridge_max_per_24h: 10
+  auto_gateout_hours: 24
+
+api:
+  mode: online          # online | offline  (offline skips the active-vehicle list entirely)
+  remote_base_url: https://cwc.lynkid.io
+  # Steps 1 and 3 both post here. Step 3 re-sends step 1's payload with the local ANPR
+  # Data API's request/response attached, so the cloud sees what the local server did.
+  rsi_endpoint: /api/vms/vehicle/create-triplogs-for-rsi
+  fetch_active_endpoint: /api/vms/vehicle/fetch-active-vehicles
+  # Sent as the `secret_key` header on every RSI call. PREFER the environment:
+  # set RSI_SECRET_KEY and leave this blank, so the key never sits in a config file.
+  secret_key: ""
+  remote_timeout: 30.0
+  # Retries apply ONLY to a timeout or network error. Any HTTP reply is final and the flow
+  # carries on to steps 2 and 3 regardless — the vehicle did pass the gate.
+  remote_retries: 3
+  remote_retry_delay: 2.0
+  success_message: "Vehicle validated successfully."
+  # Duplicate suppression is done here before the push, never by the cloud: gate-in is
+  # skipped if the vehicle is already inside, gate-out if it already left.
+
+# Step 2 — the local ANPR Data API. On the site LAN, so it works with the internet down,
+# and it is the only call that carries the plate image itself (base64 in the body).
+anpr_data_api:
+  enabled: true
+  url: http://192.168.1.153:5000/api/ANPRData
+  timeout: 10.0
+
+s3:
+  enabled: true
+  bucket: lynkid-s3-bucket
+  prefix: ANPR
+  upload_full_frame: true
+  region:               # e.g. ap-south-1 (only if s3.enabled)
+  access_key_id:        # AWS credentials (only if s3.enabled)
+  secret_access_key:
+
+redis:
+  host: localhost
+  port: 6379
+  queue_db: 0
+  tracker_db: 1
+
+sqlite:
+  path: anpr.db
+
+inference:
+  engine: mock          # mock | ultralytics  (mock runs without a GPU)
+  device: cuda
+  half: true
+  use_tensorrt: false
+  detector_weights: models/detect.pt
+  detector_imgsz: 640
+  rectifier_weights: models/keypoint.pt
+  rectifier_imgsz: 256
+  rectified_size: [192, 96]
+  ocr_weights: models/ocr.pt
+  ocr_imgsz: 320
+  target_fps: 5.0
+  frame_queue_size: 2
+
+# --- Camera RTSP credentials (applied to every camera unless it sets its own above) ---
+rtsp_default_username: admin
+rtsp_default_password: "Admin123"      # <-- put the camera RTSP password here
+
+whitelist_path: shared_config/whitelist.yaml
+doppelganger_path: doppelganger.csv
+dry_run: false

@@ -1,0 +1,137 @@
+cameras:
+- id: gatein_cam1
+  point: gate_in
+  mac: 90f721001b27
+  enabled: true
+  address: 192.168.0.151
+  port: 554
+  channel: 1
+  subtype: 0
+  description: Gate-in camera 1
+- id: gatein_cam2
+  point: gate_in
+  mac: 90f721001c2e
+  enabled: true
+  address: 192.168.0.152
+  port: 554
+  channel: 1
+  subtype: 0
+  description: Gate-in camera 2
+- id: weighbridge_cam1
+  point: weighbridge
+  mac: 90f721001b6a
+  enabled: true
+  address: 192.168.0.155
+  port: 554
+  channel: 1
+  subtype: 0
+  description: Weighbridge camera 1
+- id: weighbridge_cam2
+  point: weighbridge
+  mac: 90f721001aed
+  enabled: true
+  address: 192.168.0.156
+  port: 554
+  channel: 1
+  subtype: 0
+  description: Weighbridge camera 2
+- id: gateout_cam1
+  point: gate_out
+  mac: 90f721001b4c
+  enabled: true
+  address: 192.168.0.153
+  port: 554
+  channel: 1
+  subtype: 0
+  description: Gate-out camera 1
+- id: gateout_cam2
+  point: gate_out
+  mac: 90f721001c7c
+  enabled: true
+  address: 192.168.0.154
+  port: 554
+  channel: 1
+  subtype: 0
+  description: Gate-out camera 2
+detection:
+  window_seconds: 10.0
+  min_detections: 3
+  min_confidence: 0.7
+  detector_confidence: 0.75
+  max_detections_per_window: 50
+  top_n_candidates: 4
+  min_plate_width_frac: 0.042
+  allow_degraded_cameras: true
+  camera_down_grace_seconds: 30.0
+detection_per_point:
+  weighbridge:
+    window_seconds: 5.0
+  gate_out:
+    window_seconds: 5.0
+matching:
+  fuzzy_threshold: 0.8
+  dedup_threshold: 0.8
+cooldown:
+  same_place_seconds: 60.0
+  reentry_gap_seconds: 300.0
+  weighbridge_after_gateout_gap_seconds: 300.0
+  weighbridge_second_gap_seconds: 600.0
+  weighbridge_max_per_24h: 10
+  auto_gateout_hours: 24.0
+api:
+  mode: online
+  remote_base_url: https://cwc.lynkid.io
+  rsi_endpoint: /api/vms/vehicle/create-triplogs-for-rsi
+  secret_key: ''
+  remote_timeout: 30.0
+  remote_retries: 3
+  remote_retry_delay: 2.0
+  success_message: Vehicle validated successfully.
+anpr_data_api:
+  enabled: true
+  url: http://192.168.0.103:5000/api/ANPRData
+  timeout: 10.0
+s3:
+  enabled: true
+  bucket: lynkid-s3-bucket
+  prefix: ANPR
+  upload_full_frame: true
+  region: null
+  access_key_id: null
+  secret_access_key: null
+redis:
+  host: localhost
+  port: 6379
+  queue_db: 0
+  tracker_db: 1
+sqlite:
+  path: anpr.db
+inference:
+  engine: ultralytics
+  device: cuda
+  half: true
+  use_tensorrt: true
+  detector_weights: models/detect.pt
+  detector_imgsz: 640
+  rectifier_weights: models/keypoint.pt
+  rectifier_imgsz: 640
+  rectified_size:
+  - 384
+  - 128
+  ocr_weights: models/ocr.pt
+  ocr_imgsz: 640
+  target_fps: 5.0
+  frame_queue_size: 2
+  save_rectified: true
+  rectified_dir: debug/rectified
+  rectified_limit: 500
+retention:
+  enabled: true
+  max_age_days: 14
+  max_total_gb: 200
+  check_interval_seconds: 3600
+rtsp_default_username: admin
+rtsp_default_password: L!NK$2@25
+whitelist_path: shared_config/whitelist.yaml
+doppelganger_path: doppelganger.csv
+dry_run: false

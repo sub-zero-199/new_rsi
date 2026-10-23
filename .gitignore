@@ -1,0 +1,12 @@
+.env
+*.db
+*.db-shm
+*.db-wal
+logs/
+debug/
+models/
+new-rsi/
+.removed_hardware/
+__pycache__/
+*.pyc
+.venv/
